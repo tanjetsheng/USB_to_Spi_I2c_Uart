@@ -1,7 +1,8 @@
-#ifndef _STATE_H
-#define _STATE_H
+#ifndef _EXECUTE_H
+#define _EXECUTE_H
 #include "seperate_func.h"
-#include "stdlib.h"
+#include <string.h>
+
 
 typedef struct Spi Spi;
 struct Spi{
@@ -17,17 +18,8 @@ struct Spi{
   int TIMode ;
   int CRCCalculation;
   int CRCPolynomial ;
-
 };
 
-enum States {
-    IDLE,
-    SPI,
-    I2C,
-    Error,
-} States;
-
-  enum States state;
-void state_machine(char* string);
-
-#endif // _STATE_H
+Spi config(char array[]);
+void execute(char array[]);
+#endif // _EXECUTE_H
