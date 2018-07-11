@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "stdint.h"
 
-//uint8_t * extract(uint8_t* array);
+
 char* extract(char array[]);
 char* shifter(char array[],int num);
 

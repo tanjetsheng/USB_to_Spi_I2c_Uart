@@ -7,7 +7,7 @@ char* extract(char array[]){
 
    static char extracted[10];
    memset(extracted,0,sizeof(extracted));
-  while(array[i] != ' ' && array[i] != '='){
+  while(array[i] != ' ' && array[i] != '=' && array[i] != '\n'){
     extracted[i]=array[i];
     i++;
   }
