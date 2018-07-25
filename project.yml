@@ -30,7 +30,11 @@
     - +:test/**
     - -:test/support
   :source:
-    - src/**
+    - +:Src/**
+    - -:Src/CException
+  :include:
+    - +:Inc/**
+    - -:Inc/CException
   :support:
     - test/support
 

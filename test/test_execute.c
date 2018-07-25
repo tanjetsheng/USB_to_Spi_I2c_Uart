@@ -128,6 +128,7 @@ void test_parseAndReturnMappingTable(void)
   Mapping *map;
   map=parseAndReturnMappingTable(&try);
   printf("%s\n",map[1].name);
+  printf("-------->%i\n",map[0].maxmin->min);
   TEST_ASSERT_EQUAL_STRING(map[0].name,"Mode");
   TEST_ASSERT_EQUAL_STRING(map[1].name,"Direction");
   TEST_ASSERT_EQUAL_PTR(line+10,try);
@@ -143,10 +144,10 @@ void test_parseAndCompareTable(void)
 
 void test_parseAndCompareTable_with_many_empty_space(void)
 {
-  char* try= "Spi1Config Mode     =       1                Direction    =     2        \n";
+  char* try= "Spi1Config Mode     =       High                Direction    =     Low        \n";
   parseAndCompareTable(&try);
   TEST_ASSERT_EQUAL(spi1Config.Mode,1);
-  TEST_ASSERT_EQUAL(spi1Config.Direction,2);
+  TEST_ASSERT_EQUAL(spi1Config.Direction,0);
 }
 
 void test_parseAndCompareTable_for_Spi2(void)
@@ -176,6 +177,7 @@ void test_Cexception(void)
   Try{
     parseAndCompareTable(&test);
     TEST_ASSERT_EQUAL(NOT_IN_TABLE,ex->errorCode);
+    memset(wrong,0,10);
   }Catch(ex){
     dumpException(ex);
 
@@ -194,7 +196,7 @@ void test_other_mapping_table_expect_error(void)
 
   }Catch(ex){
     dumpException(ex);
-
+    memset(wrong,0,10);
   }
   free(ex);
 }
@@ -221,7 +223,30 @@ void test_WordMap_error(void)
     TEST_ASSERT_EQUAL(NOT_IN_WORDMAP,ex->errorCode);
   }Catch(ex){
     dumpException(ex);
-
+    memset(wrong,0,10);
   }
   free(ex);
+}
+
+void test_reconfigure(void)
+{
+  CEXCEPTION_T ex;
+  char* try= "Spi2Config Mode = High Mode = High \n";
+
+  Try{
+    parseAndCompareTable(&try);
+    TEST_ASSERT_EQUAL(CONFIGURED,ex->errorCode);
+  }Catch(ex){
+    dumpException(ex);
+    memset(wrong,0,10);
+  }
+  free(ex);
+}
+
+void test_Spisend(void)
+{
+  char* send ="SpiWrite 23 45 65\n";
+  parseAndCompareTable(&send);
+  TEST_ASSERT_EQUAL(23, Send.value[0]);
+
 }

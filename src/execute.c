@@ -3,8 +3,12 @@
 //#include "CExeption.h"
 #include "error.h"
 
+
+
+Maxmin ModeMaxMin ={1,0};
+
 Mapping Spi1TableMapping[] = {
-{"Mode",&spi1Config.Mode,0},
+{"Mode",&spi1Config.Mode,0,&ModeMaxMin},
 {"Direction",&spi1Config.Direction,0},
 // {"DataSize",&spi1Config.DataSize,0},
 // {"CLKPolarity",&spi1Config.CLKPolarity,0},
@@ -34,12 +38,26 @@ Mapping Spi2TableMapping[] = {
 {NULL,NULL,0},
 };
 
+
+
 WordMap WordMapping[] ={
   {"Low",0},
   {"High",1},
+
   {NULL,0},
 };
 
+void SpiSendValue(char** cmd)
+{
+
+  int i = 0;
+  while(**cmd != 10){
+    Send.value[i] = parseAndConvertNum(cmd);
+    printf("%i\n", Send.value[i]);
+    i++;
+  }
+
+}
 
 int parseAndCompare(char** cmd,char* string)
 {
@@ -61,6 +79,8 @@ int parseAndCompare(char** cmd,char* string)
 
 return 1;
 }
+
+
 
 int parseAndConvertNum(char** cmd)
 {
@@ -114,8 +134,12 @@ if(table[i].name == NULL){
 while(**cmd == 61){
   *cmd+=1;
   value = getValue(cmd);
-  *table[i].value = value;
-  table[i].done = 1;
+  //if(value < table[i].maxmin->max && value > table[i].maxmin->min ){
+
+    *table[i].value = value;
+    table[i].done = 1;
+//  }
+
   printf("%i\n",*table[i].value);
 }
 }
@@ -123,12 +147,19 @@ while(**cmd == 61){
 void parseAndCompareTable(char** cmd)
 {
   Mapping *mappingTable;
-  mappingTable = parseAndReturnMappingTable(cmd);
-  while(**cmd != 10){
-  parseAndInsertValue(cmd, mappingTable);
-  while(**cmd == 32){
-    *cmd +=1;
+  if(parseAndCompare(cmd,"SpiWrite")==1){
+    SpiSendValue(cmd);
   }
+  else{
+    mappingTable = parseAndReturnMappingTable(cmd);
+    mappingTable=initialDoneValue(mappingTable);
+    while(**cmd != 10){
+    parseAndInsertValue(cmd, mappingTable);
+    while(**cmd == 32){
+      *cmd +=1;
+    }
+  }
+
   printf("%c\n",**cmd);
 }
 }
@@ -148,6 +179,16 @@ Mapping* parseAndReturnMappingTable(char** cmd){
     throwException(NO_TABLE,"Didnt have this table",error);
   }
    return map1;
+}
+
+Mapping* initialDoneValue(Mapping* table)
+{
+  int i =0;
+  while(table[i].name != NULL){
+    table[i].done = 0;
+    i++;
+  }
+  return table;
 }
 
 char* parseWord(char** cmd)
