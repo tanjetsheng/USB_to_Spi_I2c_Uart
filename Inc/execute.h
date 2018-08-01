@@ -22,9 +22,29 @@ struct Spi{
   int CRCPolynomial ;
 };
 
+typedef struct I2cSend I2cSend;
+struct I2c{
+	int Instance;
+	int ClockSpeed;
+	int OwnAddress1;
+	int AddressingMode;
+	int DualAddressMode;
+	int OwnAddress2;
+	int GeneralCallMode;
+	int NoStretchMode;
+};
+
+typedef struct I2cSend I2cSend;
+struct I2cSend{
+	uint8_t address;
+	uint8_t value[10];
+	int total;
+};
+
 typedef struct SpiSend SpiSend;
 struct SpiSend{
-  int value[10];
+  uint8_t value[10];
+  int total;
 };
 
 void* funcptr;
@@ -51,6 +71,8 @@ int value;
 };
 
 
+I2cSend I2cV;
+
 SpiSend Send;
 Spi spi1Config;
 Spi spi2Config;
@@ -60,9 +82,10 @@ Mapping* parseAndReturnMappingTable(char** cmd);
 int parseAndCompare(char** cmd,char* string);
 int parseAndConvertNum(char** cmd);
 void parseAndInsertValue(char** cmd, Mapping* table);
-void parseAndCompareTable(char** cmd);
+char* parseAndCompareTable(char** cmd);
 char* parseWord(char** cmd);
 int getValue(char** cmd);
 Mapping* initialDoneValue(Mapping* table);
 void SpiSendValue(char** cmd);
+void I2cMasterSendValue(char** cmd);
 #endif // _EXECUTE_H

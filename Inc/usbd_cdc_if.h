@@ -59,9 +59,11 @@
 #include "usbd_cdc.h"
 
 /* USER CODE BEGIN INCLUDE */
- char input[100];
  char data[100];
+ char input[100];
  int dataReady;
+ extern int i;
+
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY

@@ -58,7 +58,10 @@
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
 SPI_HandleTypeDef hspi1;
+SPI_HandleTypeDef hspi2;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -69,6 +72,8 @@ SPI_HandleTypeDef hspi1;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_SPI2_Init(void);
+static void MX_I2C1_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -77,8 +82,8 @@ static void MX_SPI1_Init(void);
 
 /* USER CODE BEGIN 0 */
 uint8_t  txBuffer[] ={0x10,0x20,0x30,0x40};
-uint8_t  slavetxBuffer[] ={0x1,0x2,0x3,0x4};
-uint8_t  rxBuffer[4];
+uint8_t  slavetxBuffer[] ={1,2};
+uint8_t  rxBuffer[10];
 uint8_t  slaverxBuffer[4];
 
 /* USER CODE END 0 */
@@ -116,11 +121,9 @@ int main(void)
   MX_GPIO_Init();
   MX_USB_DEVICE_Init();
   MX_SPI1_Init();
+  MX_SPI2_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  void printing(char** value)
-  {
-	  printf("%s",value);
-  }
 
   /* USER CODE END 2 */
 
@@ -133,16 +136,46 @@ int main(void)
 
   /* USER CODE BEGIN 3 */
 	  char* result;
-  	  volatile HAL_StatusTypeDef SpiResult;
+	  char* trans;
+	  char* type;
+
+
+
+	// HAL_SPI_Receive(&hspi2, rxBuffer,2,500);
 
 		  result = &data;
-		  printf("%s",result);
+		  //printf("%s",result);
+
 		  while(dataReady == 1){
+			  trans=malloc(10);
 			  //printing(data);
-		  		 parseAndCompareTable(&result);
+			  type= parseAndCompareTable(&result);
+
+		  		//HAL_SPI_Transmit(&hspi1,Send.value,1,500);
+		  	//	SpiResult = HAL_SPI_TransmitReceive_IT(&hspi1,Send.value,slaverxBuffer,4);
+		  		//CDC_Transmit_FS("abc",10);
+		  		//printf("====%d\n",sizeof(Send.value));
+		  		//printf("------%d",i);
+			  if(type == "SpiWrite"){
+					HAL_SPI_TransmitReceive(&hspi1,Send.value,rxBuffer,Send.total,500);
+					for(int i=0;i<Send.total;i++)
+					{
+						sprintf(trans+i,"%d",rxBuffer[i]);
+					}
+			  }
+			  if(type == "I2cWrite"){
+				  HAL_I2C_Master_Transmit(&hi2c1, I2cV.address, I2cV.value, sizeof(I2cV.value),500);
+			  }
+
+		  		CDC_Transmit_FS(trans, 2);
+		  		free(trans);
 		  		dataReady = 0;
+		  		memset(data,0,100);
+
 		  	}
-		  SpiResult = HAL_SPI_TransmitReceive(&hspi1,Send.value,slaverxBuffer,4,500);
+		 // HAL_SPI_Transmit(&hspi1,slavetxBuffer, 5,500);
+
+		//  printf("%d\n",sizeof(Send.value));
   }
   /* USER CODE END 3 */
 
@@ -180,7 +213,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV8;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
@@ -206,6 +239,26 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
+/* I2C1 init function */
+static void MX_I2C1_Init(void)
+{
+
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /* SPI1 init function */
 static void MX_SPI1_Init(void)
 {
@@ -218,12 +271,36 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
   hspi1.Init.CRCPolynomial = 10;
   if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* SPI2 init function */
+static void MX_SPI2_Init(void)
+{
+
+  /* SPI2 parameter configuration*/
+  hspi2.Instance = SPI2;
+  hspi2.Init.Mode = SPI_MODE_SLAVE;
+  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi2.Init.NSS = SPI_NSS_SOFT;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi2.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -243,6 +320,7 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
 }
 

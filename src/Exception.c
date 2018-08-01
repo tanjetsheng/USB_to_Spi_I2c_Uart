@@ -14,6 +14,8 @@ Exception *createException(char *msg, int errorCode){
 
 
 void throwException(int errorCode, char *message,void *data ,...) {
+	char *error;
+	error = malloc(100);
   va_list args;
   char *buffer;
   int length;
@@ -29,6 +31,9 @@ void throwException(int errorCode, char *message,void *data ,...) {
   e->msg = buffer;
   e->errorCode = errorCode;
   e->data = data;
+  sprintf(error,"%s---> [%s]\n (err=%d)\n", e->msg,e->data, e->errorCode);
+  CDC_Transmit_FS(error,strlen(error));
+  free(error);
   Throw(e);
 
 }
@@ -46,4 +51,5 @@ void freeException(Exception *e) {
 void dumpException(Exception *e) {
 
   printf("%s---> [%s]\n (err=%d)\n", e->msg,e->data, e->errorCode);
+
 }

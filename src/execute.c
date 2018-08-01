@@ -50,13 +50,24 @@ WordMap WordMapping[] ={
 void SpiSendValue(char** cmd)
 {
 
-  int i = 0;
+	Send.total = 0;
   while(**cmd != 10){
-    Send.value[i] = parseAndConvertNum(cmd);
-    printf("%i\n", Send.value[i]);
-    i++;
+    Send.value[Send.total] = parseAndConvertNum(cmd);
+   // printf("%i\n", Send.value[Send.total]);
+    Send.total++;
   }
 
+}
+
+void I2cMasterSendValue(char** cmd)
+{
+	I2cV.total=0;
+	I2cV.address = parseAndConvertNum(cmd);
+	 while(**cmd != 10){
+		 I2cV.value[I2cV.total] = parseAndConvertNum(cmd);
+	   // printf("%i\n", Send.value[i]);
+		 I2cV.total++;
+	  }
 }
 
 int parseAndCompare(char** cmd,char* string)
@@ -144,12 +155,17 @@ while(**cmd == 61){
 }
 }
 
-void parseAndCompareTable(char** cmd)
+char* parseAndCompareTable(char** cmd)
 {
   Mapping *mappingTable;
   if(parseAndCompare(cmd,"SpiWrite")==1){
     SpiSendValue(cmd);
+    return "SpiWrite";
   }
+  if(parseAndCompare(cmd,"I2CWrite")==1){
+	  I2cMasterSendValue(cmd);
+     return "SpiWrite";
+   }
   else{
     mappingTable = parseAndReturnMappingTable(cmd);
     mappingTable=initialDoneValue(mappingTable);
@@ -161,6 +177,7 @@ void parseAndCompareTable(char** cmd)
   }
 
   printf("%c\n",**cmd);
+  return "SpiConfig";
 }
 }
 
