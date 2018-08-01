@@ -34,6 +34,13 @@ struct I2c{
 	int NoStretchMode;
 };
 
+typedef struct I2cMemWrite I2cMemWrite;
+struct I2cMemWrite{
+	uint8_t MemAddr;
+	uint8_t address;
+	uint8_t value[10];
+	int total;
+};
 typedef struct I2cSend I2cSend;
 struct I2cSend{
 	uint8_t address;
@@ -72,7 +79,7 @@ int value;
 
 
 I2cSend I2cV;
-
+I2cMemWrite MemWrite;
 SpiSend Send;
 Spi spi1Config;
 Spi spi2Config;
@@ -88,4 +95,5 @@ int getValue(char** cmd);
 Mapping* initialDoneValue(Mapping* table);
 void SpiSendValue(char** cmd);
 void I2cMasterSendValue(char** cmd);
+void I2cWriteMem(char** cmd);
 #endif // _EXECUTE_H

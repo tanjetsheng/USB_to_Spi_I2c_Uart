@@ -141,21 +141,16 @@ int main(void)
 
 
 
-	// HAL_SPI_Receive(&hspi2, rxBuffer,2,500);
 
 		  result = &data;
-		  //printf("%s",result);
+
 
 		  while(dataReady == 1){
 			  trans=malloc(10);
-			  //printing(data);
+
 			  type= parseAndCompareTable(&result);
 
-		  		//HAL_SPI_Transmit(&hspi1,Send.value,1,500);
-		  	//	SpiResult = HAL_SPI_TransmitReceive_IT(&hspi1,Send.value,slaverxBuffer,4);
-		  		//CDC_Transmit_FS("abc",10);
-		  		//printf("====%d\n",sizeof(Send.value));
-		  		//printf("------%d",i);
+
 			  if(type == "SpiWrite"){
 					HAL_SPI_TransmitReceive(&hspi1,Send.value,rxBuffer,Send.total,500);
 					for(int i=0;i<Send.total;i++)
@@ -166,8 +161,10 @@ int main(void)
 			  if(type == "I2cWrite"){
 				  HAL_I2C_Master_Transmit(&hi2c1, I2cV.address, I2cV.value, sizeof(I2cV.value),500);
 			  }
-
-		  		CDC_Transmit_FS(trans, 2);
+			  if(type == "I2CMemWrite"){
+				  HAL_I2C_Mem_Write(&hi2c1,(MemWrite.address<<1),MemWrite.MemAddr,sizeof(MemWrite.MemAddr), MemWrite.value,sizeof(MemWrite.value),500);
+			  }
+		  		CDC_Transmit_FS(trans,strlen(trans));
 		  		free(trans);
 		  		dataReady = 0;
 		  		memset(data,0,100);

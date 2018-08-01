@@ -53,7 +53,7 @@ void SpiSendValue(char** cmd)
 	Send.total = 0;
   while(**cmd != 10){
     Send.value[Send.total] = parseAndConvertNum(cmd);
-   // printf("%i\n", Send.value[Send.total]);
+
     Send.total++;
   }
 
@@ -65,9 +65,19 @@ void I2cMasterSendValue(char** cmd)
 	I2cV.address = parseAndConvertNum(cmd);
 	 while(**cmd != 10){
 		 I2cV.value[I2cV.total] = parseAndConvertNum(cmd);
-	   // printf("%i\n", Send.value[i]);
 		 I2cV.total++;
 	  }
+}
+
+void I2cWriteMem(char** cmd)
+{
+	MemWrite.total=0;
+	MemWrite.address = parseAndConvertNum(cmd);
+	MemWrite.MemAddr = parseAndConvertNum(cmd);
+	 while(**cmd != 10){
+		 MemWrite.value[I2cV.total] = parseAndConvertNum(cmd);
+		 MemWrite.total++;
+		  }
 }
 
 int parseAndCompare(char** cmd,char* string)
@@ -164,8 +174,12 @@ char* parseAndCompareTable(char** cmd)
   }
   if(parseAndCompare(cmd,"I2CWrite")==1){
 	  I2cMasterSendValue(cmd);
-     return "SpiWrite";
+     return "I2cWrite";
    }
+  if(parseAndCompare(cmd,"I2CMemWrite")==1){
+	  I2cWriteMem(cmd);
+       return "I2CMemWrite";
+     }
   else{
     mappingTable = parseAndReturnMappingTable(cmd);
     mappingTable=initialDoneValue(mappingTable);
