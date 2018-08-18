@@ -5,6 +5,7 @@
 #include "Error.h"
 #include "execute.h"
 
+
 typedef struct Exception Exception;
 typedef Exception* ExceptionPtr;
 struct Exception {

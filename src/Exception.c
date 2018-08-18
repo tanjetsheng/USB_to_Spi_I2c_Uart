@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <stdarg.h>
-
+#include "usbd_cdc_if.h"
 
 Exception *createException(char *msg, int errorCode){
   Exception *e = malloc(sizeof(Exception));

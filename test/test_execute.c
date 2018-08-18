@@ -7,6 +7,8 @@
 #include "Exception.h"
 #include "CExceptionConfig.h"
 #include "CException.h"
+#include "mock_mockFunc.h"
+
 
 void setUp(void)
 {
@@ -98,12 +100,16 @@ void test_parseAndConvert_with_char_expect_return_0(void)
 void test_parseAndInsertValue(void)
 {
   char* test = "Mode = Low ";
+  WordMap WordMapping[] ={
+    {"Low",0},
+      {NULL,NULL,0},
+  };
   Mapping Spi1TableMapping[] = {
   {"Mode",&spi1Config.Mode,0},
   {"Direction",&spi1Config.Direction,0},
   {NULL,NULL,0},
   };
-  parseAndInsertValue(&test,Spi1TableMapping);
+  parseAndInsertValue(&test,Spi1TableMapping,WordMapping);
   TEST_ASSERT_EQUAL(spi1Config.Mode,0);
 
 }
@@ -111,12 +117,16 @@ void test_parseAndInsertValue(void)
 void test_parseAndCompareTable_put_in_value_to_direction(void)
 {
   char* test = "Direction = Low \n";
+  WordMap WordMapping[] ={
+    {"Low",0},
+      {NULL,NULL,0},
+  };
   Mapping Spi1TableMapping[] = {
   {"Mode",&spi1Config.Mode,0},
   {"Direction",&spi1Config.Direction,0},
   {NULL,NULL,0},
   };
-  parseAndInsertValue(&test,Spi1TableMapping);
+  parseAndInsertValue(&test,Spi1TableMapping,WordMapping);
   TEST_ASSERT_EQUAL(spi1Config.Direction,0);
 
 }
@@ -128,7 +138,7 @@ void test_parseAndReturnMappingTable(void)
   Mapping *map;
   map=parseAndReturnMappingTable(&try);
   printf("%s\n",map[1].name);
-  printf("-------->%i\n",map[0].maxmin->min);
+//  printf("-------->%i\n",map[0].maxmin->min);
   TEST_ASSERT_EQUAL_STRING(map[0].name,"Mode");
   TEST_ASSERT_EQUAL_STRING(map[1].name,"Direction");
   TEST_ASSERT_EQUAL_PTR(line+10,try);
@@ -173,6 +183,10 @@ void test_Cexception(void)
 {
   CEXCEPTION_T ex;
   char* test = "Spi2Config po \n";
+  uint8_t data= {0x4e};
+//  uint8_t value ={0x0023};
+  //*value = 0x0002;
+   CDC_Transmit_FS_ExpectAndReturn(&data,35,0);
 
   Try{
     parseAndCompareTable(&test);
@@ -189,6 +203,8 @@ void test_other_mapping_table_expect_error(void)
 {
   CEXCEPTION_T ex;
   char* test = "Spi3Config lol = 0";
+  uint8_t data= {0x44};
+   CDC_Transmit_FS_ExpectAndReturn(&data,48,0);
 
   Try{
     parseAndCompareTable(&test);
@@ -204,9 +220,13 @@ void test_other_mapping_table_expect_error(void)
 void test_WordMap(void)
 {
   int ans;
+  WordMap WordMapping[] ={
+    {"Low",0},
+      {NULL,NULL,0},
+  };
   char * test = "Low ";
 
-  ans = getValue(&test);
+  ans = getValue(&test,WordMapping);
 
   TEST_ASSERT_EQUAL(0,ans);
 }
@@ -216,10 +236,15 @@ void test_WordMap_error(void)
   CEXCEPTION_T ex;
   int ans;
   char* test = "fast ";
-
+  WordMap WordMapping[] ={
+    {"Low",0},
+      {NULL,NULL,0},
+  };
+  uint8_t data= {0x4e};
+   CDC_Transmit_FS_ExpectAndReturn(&data,35,0);
   Try{
   //  memset(wrong,0,10);
-    ans = getValue(&test);
+    ans = getValue(&test,WordMapping);
     TEST_ASSERT_EQUAL(NOT_IN_WORDMAP,ex->errorCode);
   }Catch(ex){
     dumpException(ex);
@@ -231,7 +256,9 @@ void test_WordMap_error(void)
 void test_reconfigure(void)
 {
   CEXCEPTION_T ex;
-  char* try= "Spi2Config Mode = High Mode = High \n";
+  char* try= "Spi2Config Mode = High Mode = High  \n";
+  uint8_t data= {0x61};
+   CDC_Transmit_FS_ExpectAndReturn(&data,38,0);
 
   Try{
     parseAndCompareTable(&try);
@@ -249,4 +276,24 @@ void test_Spisend(void)
   parseAndCompareTable(&send);
   TEST_ASSERT_EQUAL(23, Send.value[0]);
 
+}
+
+ void test_hexToString(void)
+{
+  uint8_t* buffer[] ={0x17EF};
+  char* trans;
+
+  trans=malloc(10);
+
+  trans=getHexString(trans,buffer,2);
+  TEST_ASSERT_EQUAL_STRING(trans,"ef17 ");
+  free(trans);
+}
+
+void test_getReturnI2c(void)
+{
+  char* test = "I2cConfig dutyCycle = 2dutycycle\n";
+  char* output;
+  output =parseAndCompareTable(&test);
+  TEST_ASSERT_EQUAL_STRING("I2cConfig",output);
 }

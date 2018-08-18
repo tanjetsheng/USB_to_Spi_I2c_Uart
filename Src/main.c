@@ -63,6 +63,9 @@ I2C_HandleTypeDef hi2c1;
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 
+USART_HandleTypeDef husart1;
+UART_HandleTypeDef huart2;
+
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
@@ -74,16 +77,25 @@ static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_USART1_Init(void);
+static void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
+static void MX_SPI_Init(SPI_TypeDef * SPI,int Mode,int Direction,int DataSize,\
+		int Polarity,int Phase,int Nss,int Baudrate,int Firstbit,\
+		int Spi_Crc);
+static void MX_I2C_Init(I2C_TypeDef* I2c,int DutyCycle,int AddrMode,int DualAddrMode,\
+			int GenCallMode,int NoStrectch);
+static void MX_USART_Init(USART_TypeDef* usart,int Baudrate,int Wordlength,int StopBit,\
+		int Parity,int Mode\
+		,int clkPolarity,int clkPhase,int lastbit);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
 uint8_t  txBuffer[] ={0x10,0x20,0x30,0x40};
-uint8_t  slavetxBuffer[] ={1,2};
-uint8_t  rxBuffer[10];
+uint8_t  slavetxBuffer[] ={144,0,0,0,0,0};
+uint8_t  rxBuffer[20];
 uint8_t  slaverxBuffer[4];
 
 /* USER CODE END 0 */
@@ -123,6 +135,8 @@ int main(void)
   MX_SPI1_Init();
   MX_SPI2_Init();
   MX_I2C1_Init();
+  MX_USART1_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -137,10 +151,13 @@ int main(void)
   /* USER CODE BEGIN 3 */
 	  char* result;
 	  char* trans;
+
 	  char* type;
 
 
 
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+	  HAL_Delay(30);
 
 		  result = &data;
 
@@ -150,29 +167,63 @@ int main(void)
 
 			  type= parseAndCompareTable(&result);
 
+			  if(type =="SpiConfig"){
+				  MX_SPI_Init(SPI1,spi1Config.Mode,spi1Config.Direction,spi1Config.DataSize,\
+						  spi1Config.CLKPolarity,spi1Config.CLKPhase,spi1Config.NSS,spi1Config.BaudRatePrescaler,spi1Config.FirstBit,\
+						  spi1Config.CRCCalculation);
+			  }
+				if(type =="I2cConfig"){
+					MX_I2C_Init(I2C1,I2cConfig.DutyCycle,I2cConfig.AddressingMode,I2cConfig.DualAddressMode,\
+							I2cConfig.GeneralCallMode,I2cConfig.NoStretchMode);
+				}
 
+				if(type =="UsartConfig"){
+					 MX_USART_Init(USART1,152000,UsartConfig.WordLength,UsartConfig.StopBit,\
+							UsartConfig.Parity\
+							,UsartConfig.Mode,UsartConfig.ClkPolarity,UsartConfig.ClkPhase,UsartConfig.clkLastBit);
+				}
 			  if(type == "SpiWrite"){
+				  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 					HAL_SPI_TransmitReceive(&hspi1,Send.value,rxBuffer,Send.total,500);
-					for(int i=0;i<Send.total;i++)
-					{
-						sprintf(trans+i,"%d",rxBuffer[i]);
-					}
+					  trans = getHexString(trans,rxBuffer,Send.total);
 			  }
 			  if(type == "I2cWrite"){
-				  HAL_I2C_Master_Transmit(&hi2c1, I2cV.address, I2cV.value, sizeof(I2cV.value),500);
+				  HAL_I2C_Master_Transmit(&hi2c1, I2cV.address, I2cV.value, I2cV.total,500);
 			  }
 			  if(type == "I2CMemWrite"){
-				  HAL_I2C_Mem_Write(&hi2c1,(MemWrite.address<<1),MemWrite.MemAddr,sizeof(MemWrite.MemAddr), MemWrite.value,sizeof(MemWrite.value),500);
+				  HAL_I2C_Mem_Write(&hi2c1,(MemWrite.address<<1),MemWrite.MemAddr,I2C_MEMADD_SIZE_8BIT, &(MemWrite.value),I2C_MEMADD_SIZE_8BIT,500);
 			  }
-		  		CDC_Transmit_FS(trans,strlen(trans));
+			  if(type =="I2CMemRead"){
+				  HAL_I2C_Mem_Read(&hi2c1,(MemRead.address<<1), MemRead.MemAddr,I2C_MEMADD_SIZE_8BIT, slaverxBuffer, 5, 500);
+				  sprintf(trans,"%x",slaverxBuffer);
+			  }
+			  if(type == "UsartSend"){
+				 // HAL_USART_TransmitReceive(&huart2, UartV.value,rxBuffer,UartV.total, 500);
+				  HAL_UART_Transmit(&huart2, UartV.value,UartV.total, 500);
+				  //HAL_Delay(10);
+				  HAL_UART_Receive(&huart2, rxBuffer,10, 500);
+				  trans = getHexString(trans,rxBuffer,UartV.total);
+
+			  }
+			  if(type == "UsartRead"){
+				  HAL_USART_Receive(&husart1,rxBuffer,10,500);
+				  trans = getHexString(trans,rxBuffer,10);
+
+			  }
+			  CDC_Transmit_FS(trans,strlen(trans));
 		  		free(trans);
 		  		dataReady = 0;
+		  		dataNum=0;
 		  		memset(data,0,100);
+		  		memset(input,0,100);
 
 		  	}
-		 // HAL_SPI_Transmit(&hspi1,slavetxBuffer, 5,500);
 
-		//  printf("%d\n",sizeof(Send.value));
+
+//		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+
+		 // HAL_USART_Transmit(&husart1,UartV.value,UartV.total,500);
+
   }
   /* USER CODE END 3 */
 
@@ -210,7 +261,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV8;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV16;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
@@ -268,7 +319,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -304,6 +355,45 @@ static void MX_SPI2_Init(void)
 
 }
 
+/* USART1 init function */
+static void MX_USART1_Init(void)
+{
+
+  husart1.Instance = USART1;
+  husart1.Init.BaudRate = 115200;
+  husart1.Init.WordLength = USART_WORDLENGTH_8B;
+  husart1.Init.StopBits = USART_STOPBITS_1;
+  husart1.Init.Parity = USART_PARITY_NONE;
+  husart1.Init.Mode = USART_MODE_TX_RX;
+  husart1.Init.CLKPolarity = USART_POLARITY_LOW;
+  husart1.Init.CLKPhase = USART_PHASE_1EDGE;
+  husart1.Init.CLKLastBit = USART_LASTBIT_DISABLE;
+  if (HAL_USART_Init(&husart1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* USART2 init function */
+static void MX_USART2_UART_Init(void)
+{
+
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /** Configure pins as 
         * Analog 
         * Input 
@@ -314,14 +404,90 @@ static void MX_SPI2_Init(void)
 static void MX_GPIO_Init(void)
 {
 
+  GPIO_InitTypeDef GPIO_InitStruct;
+
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PB0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
 }
 
 /* USER CODE BEGIN 4 */
+static void MX_SPI_Init(SPI_TypeDef * SPI,int Mode,int Direction,int DataSize,\
+		int Polarity,int Phase,int Nss,int Baudrate,int Firstbit,\
+		int Spi_Crc)
+{
+
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI;
+  hspi1.Init.Mode = Mode;
+  hspi1.Init.Direction = Direction;
+  hspi1.Init.DataSize = DataSize;
+  hspi1.Init.CLKPolarity = Polarity;
+  hspi1.Init.CLKPhase = Phase;
+  hspi1.Init.NSS = Nss;
+  hspi1.Init.BaudRatePrescaler = Baudrate;
+  hspi1.Init.FirstBit = Firstbit;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = Spi_Crc;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+static void MX_I2C_Init(I2C_TypeDef* I2c,int DutyCycle,int AddrMode,int DualAddrMode,\
+	int GenCallMode,int NoStrectch)
+{
+
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = DutyCycle;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = AddrMode;
+  hi2c1.Init.DualAddressMode = DualAddrMode;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = GenCallMode;
+  hi2c1.Init.NoStretchMode = NoStrectch;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+static void MX_USART_Init(USART_TypeDef* usart,int Baudrate,int Wordlength,int StopBit,int Parity,int Mode\
+		,int clkPolarity,int clkPhase,int lastbit)
+{
+
+  husart1.Instance = USART1;
+  husart1.Init.BaudRate = Baudrate;
+  husart1.Init.WordLength = Wordlength;
+  husart1.Init.StopBits = StopBit;
+  husart1.Init.Parity = Parity;
+  husart1.Init.Mode = Mode;
+  husart1.Init.CLKPolarity = clkPolarity;
+  husart1.Init.CLKPhase = clkPhase;
+  husart1.Init.CLKLastBit = lastbit;
+  if (HAL_USART_Init(&husart1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
 
 /* USER CODE END 4 */
 

@@ -127,7 +127,7 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-int i;
+
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -295,18 +295,19 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 
 	if(*Buf == 13){
 
-		memcpy(input+i,"\n",2);
-		i++;
-		for(int q=0;q<i;q++){
+		memcpy(input+dataNum,"\n",2);
+		dataNum++;
+		for(int q=0;q<dataNum;q++){
 			data[q]=input[q];
 		}
-		memset(input,0,100);
+
+
 
 		dataReady=1;
 	}
 	printf(Buf);
-	memcpy(input+i,Buf,sizeof(Buf));
-	i=i+(*Len);
+	memcpy(input+dataNum,Buf,sizeof(Buf));
+	dataNum=dataNum+(*Len);
 	USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
 	USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   return (USBD_OK);

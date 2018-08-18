@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 
+
 typedef struct Spi Spi;
 struct Spi{
   int Instance ;
@@ -22,9 +23,10 @@ struct Spi{
   int CRCPolynomial ;
 };
 
-typedef struct I2cSend I2cSend;
+typedef struct I2c I2c;
 struct I2c{
 	int Instance;
+  int DutyCycle;
 	int ClockSpeed;
 	int OwnAddress1;
 	int AddressingMode;
@@ -34,11 +36,28 @@ struct I2c{
 	int NoStretchMode;
 };
 
+typedef struct  Usart Usart;
+struct Usart{
+  int WordLength;
+  int StopBit;
+  int Parity;
+  int Mode;
+  int ClkPolarity;
+  int ClkPhase;
+  int clkLastBit;
+};
 typedef struct I2cMemWrite I2cMemWrite;
 struct I2cMemWrite{
 	uint8_t MemAddr;
 	uint8_t address;
 	uint8_t value[10];
+	int total;
+};
+
+typedef struct I2cMemRead I2cMemRead;
+struct I2cMemRead{
+	uint8_t MemAddr;
+	uint8_t address;
 	int total;
 };
 typedef struct I2cSend I2cSend;
@@ -54,13 +73,14 @@ struct SpiSend{
   int total;
 };
 
+typedef struct UartSend UartSend;
+struct UartSend{
+	uint8_t value[10];
+	int total;
+};
+
 void* funcptr;
 
-typedef struct Maxmin Maxmin;
-struct Maxmin{
-  int max;
-  int min;
-};
 
 typedef struct Mapping Mapping;
 struct Mapping{
@@ -68,7 +88,7 @@ char *name;
 int* value;
 int done;
 //void (*funcptr)(char** cmd,Mapping TableMapping);
-Maxmin *maxmin;
+
 };
 
 typedef struct WordMap WordMap;
@@ -77,23 +97,29 @@ char *name;
 int value;
 };
 
-
+UartSend UartV;
 I2cSend I2cV;
 I2cMemWrite MemWrite;
+I2cMemRead MemRead;
 SpiSend Send;
 Spi spi1Config;
 Spi spi2Config;
+I2c I2cConfig;
+Usart UsartConfig;
 char wrong[10];
 
 Mapping* parseAndReturnMappingTable(char** cmd);
 int parseAndCompare(char** cmd,char* string);
 int parseAndConvertNum(char** cmd);
-void parseAndInsertValue(char** cmd, Mapping* table);
+void parseAndInsertValue(char** cmd, Mapping* table,WordMap* wordTable);
 char* parseAndCompareTable(char** cmd);
 char* parseWord(char** cmd);
-int getValue(char** cmd);
+int getValue(char** cmd,WordMap* wordingTable);
 Mapping* initialDoneValue(Mapping* table);
 void SpiSendValue(char** cmd);
 void I2cMasterSendValue(char** cmd);
 void I2cWriteMem(char** cmd);
+void I2cReadMem(char** cmd);
+char* getHexString(char* transmit,uint8_t* data,int total);
+void UartSendData(char** cmd);
 #endif // _EXECUTE_H

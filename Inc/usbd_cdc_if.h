@@ -62,7 +62,8 @@
  char data[100];
  char input[100];
  int dataReady;
- extern int i;
+ int dataNum;
+ //extern int i;
 
 /* USER CODE END INCLUDE */
 
