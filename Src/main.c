@@ -85,7 +85,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_SPI_Init(SPI_TypeDef * SPI,int Mode,int Direction,int DataSize,\
 		int Polarity,int Phase,int Nss,int Baudrate,int Firstbit,\
 		int Spi_Crc);
-static void MX_I2C_Init(I2C_TypeDef* I2c,int DutyCycle,int AddrMode,int DualAddrMode,\
+static void MX_I2C_Init(I2C_TypeDef* I2c,int clockSpeed,int DutyCycle,int AddrMode,int DualAddrMode,\
 			int GenCallMode,int NoStrectch);
 static void MX_USART_Init(USART_TypeDef* usart,int Baudrate,int Wordlength,int StopBit,\
 		int Parity,int Mode\
@@ -143,6 +143,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint8_t value=20;
+
   while (1)
   {
 
@@ -154,7 +156,7 @@ int main(void)
 
 	  char* type;
 
-
+	 // HAL_I2C_Master_Transmit(&hi2c1, (0x50<<1), &value, 2,500);
 
 	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 	  HAL_Delay(30);
@@ -173,12 +175,12 @@ int main(void)
 						  spi1Config.CRCCalculation);
 			  }
 				if(type =="I2cConfig"){
-					MX_I2C_Init(I2C1,I2cConfig.DutyCycle,I2cConfig.AddressingMode,I2cConfig.DualAddressMode,\
+					MX_I2C_Init(I2C1,I2cConfig.ClockSpeed,I2cConfig.DutyCycle,I2cConfig.AddressingMode,I2cConfig.DualAddressMode,\
 							I2cConfig.GeneralCallMode,I2cConfig.NoStretchMode);
 				}
 
 				if(type =="UsartConfig"){
-					 MX_USART_Init(USART1,152000,UsartConfig.WordLength,UsartConfig.StopBit,\
+					 MX_USART_Init(USART1,UsartConfig.BaudRate,UsartConfig.WordLength,UsartConfig.StopBit,\
 							UsartConfig.Parity\
 							,UsartConfig.Mode,UsartConfig.ClkPolarity,UsartConfig.ClkPhase,UsartConfig.clkLastBit);
 				}
@@ -449,12 +451,12 @@ static void MX_SPI_Init(SPI_TypeDef * SPI,int Mode,int Direction,int DataSize,\
 
 }
 
-static void MX_I2C_Init(I2C_TypeDef* I2c,int DutyCycle,int AddrMode,int DualAddrMode,\
+static void MX_I2C_Init(I2C_TypeDef* I2c,int clockSpeed,int DutyCycle,int AddrMode,int DualAddrMode,\
 	int GenCallMode,int NoStrectch)
 {
 
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.ClockSpeed = clockSpeed;
   hi2c1.Init.DutyCycle = DutyCycle;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = AddrMode;

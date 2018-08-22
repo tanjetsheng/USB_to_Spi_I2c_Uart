@@ -8,6 +8,7 @@
 #include "CExceptionConfig.h"
 #include "CException.h"
 #include "mock_mockFunc.h"
+#include "stm32f1xx_hal.h"
 
 
 void setUp(void)
@@ -217,6 +218,24 @@ void test_other_mapping_table_expect_error(void)
   free(ex);
 }
 
+void test_Spireconfigure(void)
+{
+  CEXCEPTION_T ex;
+  char* test = "Spi1Config Mode = slave Mode = slave";
+  uint8_t data= {0x61};
+   CDC_Transmit_FS_ExpectAndReturn(&data,38,0);
+
+   Try{
+     parseAndCompareTable(&test);
+     TEST_ASSERT_EQUAL(CONFIGURED,ex->errorCode);
+
+   }Catch(ex){
+     dumpException(ex);
+     memset(wrong,0,10);
+   }
+   free(ex);
+
+}
 void test_WordMap(void)
 {
   int ans;
@@ -275,25 +294,63 @@ void test_Spisend(void)
   char* send ="SpiWrite 23 45 65\n";
   parseAndCompareTable(&send);
   TEST_ASSERT_EQUAL(23, Send.value[0]);
-
+  TEST_ASSERT_EQUAL(45, Send.value[1]);
+  TEST_ASSERT_EQUAL(65, Send.value[2]);
 }
 
  void test_hexToString(void)
 {
-  uint8_t* buffer[] ={0x17EF};
+  uint8_t* buffer[] ={23,239};
   char* trans;
 
   trans=malloc(10);
 
-  trans=getHexString(trans,buffer,2);
+  trans=getHexString(trans,buffer,4);
   TEST_ASSERT_EQUAL_STRING(trans,"ef17 ");
   free(trans);
 }
 
 void test_getReturnI2c(void)
 {
-  char* test = "I2cConfig dutyCycle = 2dutycycle\n";
+  char* test = "I2cConfig dutyCycle = 2dutycycle AddressingMode = 7bit\n";
   char* output;
   output =parseAndCompareTable(&test);
   TEST_ASSERT_EQUAL_STRING("I2cConfig",output);
+  TEST_ASSERT_EQUAL(I2cConfig.DutyCycle,I2C_DUTYCYCLE_2);
+  TEST_ASSERT_EQUAL(I2cConfig.AddressingMode,I2C_ADDRESSINGMODE_7BIT);
+  test = "I2cConfig DualAddressMode = dual_able\n";
+  output =parseAndCompareTable(&test);
+  TEST_ASSERT_EQUAL(I2cConfig.DutyCycle,I2C_DUTYCYCLE_2);
+  TEST_ASSERT_EQUAL(I2cConfig.AddressingMode,I2C_ADDRESSINGMODE_7BIT);
+  TEST_ASSERT_EQUAL(I2cConfig.DualAddressMode,I2C_DUALADDRESS_ENABLE);
+  test = "I2cConfig dutyCycle = 16dutyCycle\n";
+  output =parseAndCompareTable(&test);
+  TEST_ASSERT_EQUAL(I2cConfig.DutyCycle,I2C_DUTYCYCLE_16_9);
+}
+
+void test_UsartConfigure(void){
+  char* test = "UsartConfig WordLength = 8bit BaudRate = 152000\n";
+  parseAndCompareTable(&test);
+  TEST_ASSERT_EQUAL(UsartConfig.WordLength,USART_WORDLENGTH_8B);
+  TEST_ASSERT_EQUAL(UsartConfig.BaudRate,152000);
+  test = "UsartConfig Parity = even\n";
+  parseAndCompareTable(&test);
+  TEST_ASSERT_EQUAL(UsartConfig.WordLength,USART_WORDLENGTH_8B);
+  TEST_ASSERT_EQUAL(UsartConfig.BaudRate,152000);
+  TEST_ASSERT_EQUAL(UsartConfig.Parity,USART_PARITY_EVEN);
+}
+void test_getClockSpeed(void)
+{
+  char* test = "I2cConfig clockSpeed = 1000\n";
+
+  parseAndCompareTable(&test);
+  TEST_ASSERT_EQUAL(1000, I2cConfig.ClockSpeed);
+}
+
+void test_getBaudRate(void)
+{
+  char* test = "UsartConfig BaudRate = 115200\n";
+
+  parseAndCompareTable(&test);
+  TEST_ASSERT_EQUAL(115200,UsartConfig.BaudRate);
 }

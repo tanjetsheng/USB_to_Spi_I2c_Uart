@@ -39,6 +39,7 @@ struct I2c{
 typedef struct  Usart Usart;
 struct Usart{
   int WordLength;
+  int BaudRate;
   int StopBit;
   int Parity;
   int Mode;

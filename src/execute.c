@@ -51,13 +51,14 @@ Mapping I2cTableMapping[]={
 };
 
 Mapping UsartTableMapping[]={
-  {"WordLenth",&UsartConfig.WordLength,0},
-  {"StopBit",&UsartConfig.StopBit},
-  {"Parity",&UsartConfig.Parity},
-  {"Mode",&UsartConfig.Mode},
-  {"ClkPolarity",&UsartConfig.ClkPolarity},
-  {"ClkPhase",&UsartConfig.ClkPhase},
-  {"clkLastBit",&UsartConfig.clkLastBit},
+  {"WordLength",&UsartConfig.WordLength,0},
+  {"BaudRate",&UsartConfig.BaudRate,0},
+  {"StopBit",&UsartConfig.StopBit,0},
+  {"Parity",&UsartConfig.Parity,0},
+  {"Mode",&UsartConfig.Mode,0},
+  {"ClkPolarity",&UsartConfig.ClkPolarity,0},
+  {"ClkPhase",&UsartConfig.ClkPhase,0},
+  {"clkLastBit",&UsartConfig.clkLastBit,0},
   {NULL,NULL,0},
 };
 WordMap UsartMappingTable[] ={
@@ -166,6 +167,7 @@ void I2cReadMem(char** cmd){
 	MemRead.address = parseAndConvertNum(cmd);
 	MemRead.MemAddr = parseAndConvertNum(cmd);
 }
+
 void UartSendData(char** cmd){
 	UartV.total=0;
 	 while(**cmd != 10){
@@ -173,15 +175,14 @@ void UartSendData(char** cmd){
 		 UartV.total++;
 	 }
 
-
 }
 int parseAndCompare(char** cmd,char* string)
 {
-  while(**cmd == 32){
+  while(**cmd == 32 || **cmd == 61 || **cmd == 10){
     *cmd +=1;
   }
   char* originline = *cmd;
-  while(**cmd != 32 && **cmd != 10){
+  while(**cmd != 32 && **cmd != 10 ){
   if(**cmd==*string){
     printf("%c",**cmd);
     *cmd+= 1;
@@ -201,9 +202,10 @@ return 1;
 int parseAndConvertNum(char** cmd)
 {
   int result = 0;
-  while(**cmd == 32){
+  while(**cmd == 32 || **cmd == 61){
     *cmd +=1;
   }
+
   char* originline = *cmd;
   while(**cmd != 32 && **cmd != 10){
   if(58>(**cmd)&&(**cmd)>47){
@@ -223,6 +225,7 @@ void parseAndInsertValue(char** cmd, Mapping* table,WordMap* wordTable)
   int i =0;
   int value =0;
 char* originline = *cmd;
+
   while(**cmd != 61 && table[i].name != NULL && **cmd != 10){
   if(parseAndCompare(cmd,table[i].name)==1){
       *cmd +=1;
@@ -247,17 +250,21 @@ if(table[i].name == NULL){
 
     throwException(NOT_IN_TABLE,"Not in the table",error);
 }
+if(table[i].name ==  "BaudRate"){
+    *cmd+=1;
+      value = parseAndConvertNum(cmd);
+}
+if(table[i].name ==  "clockSpeed"){
+    *cmd+=1;
+      value = parseAndConvertNum(cmd);
+}
 while(**cmd == 61){
   *cmd+=1;
   value = getValue(cmd,wordTable);
-
-
-    *table[i].value = value;
-    table[i].done = 1;
-
-
   printf("%i\n",*table[i].value);
 }
+*table[i].value = value;
+table[i].done = 1;
 }
 
 char* parseAndCompareTable(char** cmd)
@@ -362,6 +369,9 @@ Mapping* parseAndReturnMappingTable(char** cmd){
   }
   else if(parseAndCompare(cmd,"I2cConfig")==1){
     map1 = I2cTableMapping;
+  }
+  else if(parseAndCompare(cmd,"UsartConfig")==1){
+    map1 = UsartTableMapping;
   }
   else{
     char* error = parseWord(cmd);
