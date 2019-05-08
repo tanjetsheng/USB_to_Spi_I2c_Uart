@@ -6,5 +6,5 @@ The command line will is shows below.
 This project able to let user configure Spi,I2c and Uart of STM32f103. This project will parse the input of user and table 
 the data that user input and link to corresponding table and function.
 
-## Getting Started
+
 
